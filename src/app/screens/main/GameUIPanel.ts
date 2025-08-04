@@ -6,7 +6,7 @@ export class GameUIPanel extends Container {
   private blueFireButton!: FancyButton;
   private redFireText!: Text;
   private blueFireText!: Text;
-  
+
   // Shot quantity buttons
   private shot5Button!: FancyButton;
   private shot10Button!: FancyButton;
@@ -35,7 +35,7 @@ export class GameUIPanel extends Container {
     const sweepBackground = new Graphics()
       .rect(-50, 0, 0, 50) // Start with width 0
       .fill(0xff0000);
-    
+
     // Apply skew transform (45 degrees)
     sweepBackground.skew.x = Math.PI / 4; // 45 degrees in radians
 
@@ -50,12 +50,12 @@ export class GameUIPanel extends Container {
     const hoverSweep = sweepBackground.clone();
     hoverSweep.width = 300; // 250% width like CSS
     hoverView.addChild(hoverSweep);
-    
+
     // Hover outline with lighter color and shadow effect
     const hoverOutline = new Graphics()
       .roundRect(0, 0, 120, 50, 5)
       .stroke({ width: 2, color: 0xff4444 }); // Lighter red
-    
+
     hoverView.addChild(hoverOutline);
 
     // Pressed view (similar to hover but slightly smaller scale)
@@ -63,11 +63,11 @@ export class GameUIPanel extends Container {
     const pressedSweep = sweepBackground.clone();
     pressedSweep.width = 300;
     hoverView.addChild(pressedSweep);
-    
+
     const pressedOutline = new Graphics()
       .roundRect(0, 0, 120, 50, 5)
       .stroke({ width: 2, color: 0xff4444 });
-    
+
     pressedView.addChild(pressedSweep);
     pressedView.addChild(pressedOutline);
 
@@ -106,7 +106,7 @@ export class GameUIPanel extends Container {
     this.redFireButton.onHover.connect(() => {
       this.redFireText.style.fill = 0xffffff; // White on hover
     });
-    
+
     this.redFireButton.onOut.connect(() => {
       this.redFireText.style.fill = 0xff0000; // Back to red
     });
@@ -143,7 +143,7 @@ export class GameUIPanel extends Container {
     const sweepBackground = new Graphics()
       .rect(-50, 0, 0, 50) // Start with width 0
       .fill(0x0066ff);
-    
+
     // Apply skew transform (45 degrees)
     sweepBackground.skew.x = Math.PI / 4; // 45 degrees in radians
 
@@ -158,23 +158,23 @@ export class GameUIPanel extends Container {
     const hoverSweep = sweepBackground.clone();
     hoverSweep.width = 300; // 250% width like CSS
     hoverView.addChild(hoverSweep);
-    
+
     // Hover outline with lighter color
     const hoverOutline = new Graphics()
       .roundRect(0, 0, 120, 50, 5)
       .stroke({ width: 2, color: 0x4488ff }); // Lighter blue
-    
+
     hoverView.addChild(hoverOutline);
 
     // Pressed view (similar to hover but slightly smaller scale)
     const pressedView = new Container();
     const pressedSweep = sweepBackground.clone();
     pressedSweep.width = 300;
-    
+
     const pressedOutline = new Graphics()
       .roundRect(0, 0, 120, 50, 5)
       .stroke({ width: 2, color: 0x4488ff });
-    
+
     pressedView.addChild(pressedSweep);
     pressedView.addChild(pressedOutline);
 
@@ -213,7 +213,7 @@ export class GameUIPanel extends Container {
     this.blueFireButton.onHover.connect(() => {
       this.blueFireText.style.fill = 0xffffff; // White on hover
     });
-    
+
     this.blueFireButton.onOut.connect(() => {
       this.blueFireText.style.fill = 0x0066ff; // Back to blue
     });
@@ -266,7 +266,7 @@ export class GameUIPanel extends Container {
     // Create simple button
     const isSelected = quantity === this.selectedQuantity;
     const buttonColor = isSelected ? 0x00ff00 : 0x666666; // Green if selected, gray otherwise
-    
+
     const defaultView = new Graphics()
       .roundRect(0, 0, 40, 30, 5)
       .fill(buttonColor)
@@ -324,7 +324,7 @@ export class GameUIPanel extends Container {
   private updateSingleQuantityButton(button: FancyButton, quantity: number): void {
     const isSelected = quantity === this.selectedQuantity;
     const buttonColor = isSelected ? 0x00ff00 : 0x666666;
-    
+
     const defaultView = new Graphics()
       .roundRect(0, 0, 40, 30, 5)
       .fill(buttonColor)

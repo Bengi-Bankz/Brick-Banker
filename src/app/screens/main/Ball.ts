@@ -21,13 +21,13 @@ export class Ball extends Sprite {
 
     // Create sprite with the appropriate texture
     super(Texture.from(textureName));
-    
+
     // Center the sprite
     this.anchor.set(0.5);
-    
+
     // Update radius based on actual sprite size
     this.radius = Math.max(this.width, this.height) / 2;
-    
+
     console.log(`Ball created with texture: ${textureName}, size: ${this.width}x${this.height}, radius: ${this.radius}`);
   }
 
@@ -97,7 +97,7 @@ export class Ball extends Sprite {
       this.velocityY = -Math.abs(this.velocityY); // Always bounce upward
 
       console.log(`Ball bounced off cannon at x=${this.x}, new velocity: (${this.velocityX}, ${this.velocityY})`);
-      
+
       return true;
     }
 

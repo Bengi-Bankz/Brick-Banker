@@ -15,25 +15,33 @@ export class Brick extends Graphics {
 
     this.multiplier = multiplier;
     this.originalColor = color;
-    
-    // Determine hit points based on multiplier (higher value = more hits needed)
-    // Made all bricks much harder to break
-    if (multiplier >= 1000) {
-      this.maxHitPoints = 8; // Ultra high value bricks need 8 hits
-    } else if (multiplier >= 500) {
-      this.maxHitPoints = 7; // Very high value bricks need 7 hits
-    } else if (multiplier >= 100) {
-      this.maxHitPoints = 6; // High value bricks need 6 hits
-    } else if (multiplier >= 50) {
-      this.maxHitPoints = 5; // Medium-high value bricks need 5 hits
-    } else if (multiplier >= 10) {
-      this.maxHitPoints = 4; // Medium value bricks need 4 hits
-    } else if (multiplier >= 2) {
-      this.maxHitPoints = 3; // Low-medium value bricks need 3 hits
+
+    // Handle special cases
+    if (multiplier === -1) {
+      // Metal squares that don't break
+      this.maxHitPoints = 999999; // Effectively unbreakable
+    } else if (multiplier === 999) {
+      // Bonus squares
+      this.maxHitPoints = 1; // Break easily for bonus
     } else {
-      this.maxHitPoints = 2; // Even the lowest value bricks need 2 hits minimum
+      // Determine hit points based on multiplier (higher value = more hits needed)
+      if (multiplier >= 1000) {
+        this.maxHitPoints = 8; // Ultra high value bricks need 8 hits
+      } else if (multiplier >= 500) {
+        this.maxHitPoints = 7; // Very high value bricks need 7 hits
+      } else if (multiplier >= 100) {
+        this.maxHitPoints = 6; // High value bricks need 6 hits
+      } else if (multiplier >= 50) {
+        this.maxHitPoints = 5; // Medium-high value bricks need 5 hits
+      } else if (multiplier >= 10) {
+        this.maxHitPoints = 4; // Medium value bricks need 4 hits
+      } else if (multiplier >= 2) {
+        this.maxHitPoints = 3; // Low-medium value bricks need 3 hits
+      } else {
+        this.maxHitPoints = 2; // Even the lowest value bricks need 2 hits minimum
+      }
     }
-    
+
     this.currentHitPoints = this.maxHitPoints;
     this.drawBrick(color);
     this.addMultiplierText();
@@ -63,9 +71,13 @@ export class Brick extends Graphics {
   }
 
   private addMultiplierText(): void {
-    // Format multiplier text without hit points indicator
+    // Format multiplier text with special cases
     let multiplierDisplay: string;
-    if (this.multiplier >= 1) {
+    if (this.multiplier === -1) {
+      multiplierDisplay = "METAL"; // Metal squares
+    } else if (this.multiplier === 999) {
+      multiplierDisplay = "BONUS"; // Bonus squares
+    } else if (this.multiplier >= 1) {
       multiplierDisplay = `${this.multiplier}x`;
     } else {
       multiplierDisplay = `${this.multiplier}x`;
@@ -73,7 +85,7 @@ export class Brick extends Graphics {
 
     // Create text
     this.multiplierText = new Text(multiplierDisplay, {
-      fontSize: 16, // Back to larger font since it's just one line
+      fontSize: this.multiplier === -1 || this.multiplier === 999 ? 12 : 16, // Smaller font for special text
       fill: 0x000000,
       fontWeight: "bold",
       align: "center",
@@ -87,14 +99,18 @@ export class Brick extends Graphics {
   }
 
   private updateMultiplierText(): void {
-    // Update the text to show only multiplier (no HP)
+    // Update the text to show only multiplier (no HP) with special cases
     let multiplierDisplay: string;
-    if (this.multiplier >= 1) {
+    if (this.multiplier === -1) {
+      multiplierDisplay = "METAL"; // Metal squares
+    } else if (this.multiplier === 999) {
+      multiplierDisplay = "BONUS"; // Bonus squares
+    } else if (this.multiplier >= 1) {
       multiplierDisplay = `${this.multiplier}x`;
     } else {
       multiplierDisplay = `${this.multiplier}x`;
     }
-    
+
     this.multiplierText.text = multiplierDisplay;
   }
 
@@ -138,7 +154,7 @@ export class Brick extends Graphics {
 
   public hitBrick(): boolean {
     this.currentHitPoints--;
-    
+
     if (this.currentHitPoints <= 0) {
       // Brick is completely destroyed
       this.destroyed = true;
@@ -155,17 +171,17 @@ export class Brick extends Graphics {
   private showDamage(): void {
     // Clear and redraw the brick with damage effects
     this.clear();
-    
+
     // Calculate damage level (darker color + cracks)
     const damageLevel = 1 - (this.currentHitPoints / this.maxHitPoints);
     const darkenAmount = damageLevel * 0.4; // Darken by up to 40%
-    
+
     // Darken the original color
     const r = Math.floor(((this.originalColor >> 16) & 0xFF) * (1 - darkenAmount));
     const g = Math.floor(((this.originalColor >> 8) & 0xFF) * (1 - darkenAmount));
     const b = Math.floor((this.originalColor & 0xFF) * (1 - darkenAmount));
     const damagedColor = (r << 16) | (g << 8) | b;
-    
+
     this.drawBrick(damagedColor);
     this.drawCracks(damageLevel);
   }
@@ -173,35 +189,35 @@ export class Brick extends Graphics {
   private drawCracks(damageLevel: number): void {
     // Draw crack lines based on damage level - more cracks as damage increases
     const crackAlpha = Math.min(damageLevel * 1.5, 1.0); // Make cracks more visible
-    
+
     // First crack appears early
     if (damageLevel > 0.1) {
       this.moveTo(-this.brickWidth / 4, -this.brickHeight / 2);
       this.lineTo(-this.brickWidth / 4 + 10, this.brickHeight / 2);
       this.stroke({ width: 1, color: 0x000000, alpha: crackAlpha });
     }
-    
+
     // Second crack for moderate damage
     if (damageLevel > 0.3) {
       this.moveTo(this.brickWidth / 4, -this.brickHeight / 2);
       this.lineTo(this.brickWidth / 4 - 8, this.brickHeight / 2);
       this.stroke({ width: 1, color: 0x000000, alpha: crackAlpha });
     }
-    
+
     // Third crack for heavy damage
     if (damageLevel > 0.5) {
       this.moveTo(0, -this.brickHeight / 2);
       this.lineTo(-5, this.brickHeight / 2);
       this.stroke({ width: 1, color: 0x000000, alpha: crackAlpha });
     }
-    
+
     // Fourth crack for severe damage
     if (damageLevel > 0.7) {
       this.moveTo(-this.brickWidth / 6, -this.brickHeight / 4);
       this.lineTo(this.brickWidth / 6, this.brickHeight / 4);
       this.stroke({ width: 1, color: 0x000000, alpha: crackAlpha });
     }
-    
+
     // Final cracks for near destruction
     if (damageLevel > 0.85) {
       this.moveTo(this.brickWidth / 6, -this.brickHeight / 4);
@@ -221,12 +237,12 @@ export class Brick extends Graphics {
     this.destroyed = false;
     this.visible = true;
     this.currentHitPoints = this.maxHitPoints;
-    
+
     // Clear and redraw with original color
     this.clear();
     this.drawBrick(this.originalColor);
     this.addMultiplierText();
-    
+
     console.log(`Brick reset: ${this.multiplier}x with ${this.maxHitPoints} HP`);
   }
 }

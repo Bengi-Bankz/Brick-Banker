@@ -24,7 +24,7 @@ export class MainScreen extends Container {
     this.mainContainer = new Container();
     this.addChild(this.mainContainer);
     this.game = new BrickBreakerGame();
-    
+
     // Add the game to the main container immediately
     this.mainContainer.addChild(this.game);
 
@@ -64,13 +64,13 @@ export class MainScreen extends Container {
     // Create a border around the game area
     this.gameBorder.clear();
     this.gameBorder.lineStyle(4, 0x666666, 1); // 4px thick gray border
-    
+
     // Draw border rectangle - will be resized in resize method
     this.gameBorder.drawRect(-400, -300, 800, 600);
   }
 
   /** Prepare the screen just before showing */
-  public prepare() {}
+  public prepare() { }
 
   /** Update the screen */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -95,7 +95,7 @@ export class MainScreen extends Container {
   }
 
   /** Fully reset */
-  public reset() {}
+  public reset() { }
 
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
@@ -106,7 +106,7 @@ export class MainScreen extends Container {
     const baseGameWidth = width - 350; // Leave space for UI panel on right
     const gameWidth = baseGameWidth * 0.7; // Reduce game canvas width by 30%
     const gameHeight = height - 40; // Leave some margin top/bottom
-    
+
     this.mainContainer.x = centerX - 175; // Offset left to account for UI panel
     this.mainContainer.y = centerY;
 
@@ -122,7 +122,7 @@ export class MainScreen extends Container {
 
     // Resize UI panel but don't position it (buttons are now in the control panel)
     this.uiPanel.resize(width, height);
-    
+
     // Hide the GameUIPanel since buttons are now integrated into the control panel
     this.uiPanel.visible = false;
 
@@ -147,7 +147,7 @@ export class MainScreen extends Container {
   }
 
   /** Hide screen with animations */
-  public async hide() {}
+  public async hide() { }
 
   /** Auto pause the app when window go out of focus */
   public blur() {
