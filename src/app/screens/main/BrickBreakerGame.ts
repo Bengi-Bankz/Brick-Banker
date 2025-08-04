@@ -67,7 +67,7 @@ export class BrickBreakerGame extends Container {
     this.createCannonsAndButtons();
 
     // Create UI text
-    this.balanceText = new Text(`Balance: $${this.balance}`, {
+    this.balanceText = new Text(`Balance: $${this.balance.toFixed(2)}`, {
       fontSize: 24,
       fill: 0xffffff,
     });
@@ -700,9 +700,9 @@ export class BrickBreakerGame extends Container {
   }
 
   private addSideWinEntry(side: "left" | "right", multiplier: number): void {
-    // Calculate win amount
-    const baseAmount = 10;
-    const winAmount = Math.round(baseAmount * multiplier);
+    // Calculate win amount using actual bet amount
+    const baseAmount = this.getEffectiveBetAmount();
+    const winAmount = Math.round((baseAmount * multiplier) * 100) / 100; // Proper decimal calculation
 
     // Update current winnings for the side
     if (side === "left") {
@@ -723,17 +723,17 @@ export class BrickBreakerGame extends Container {
       fill: sideColor,
       fontWeight: "bold",
     });
-    tileText.x = 5;
+    tileText.x = -25; // Moved further left from -10
     tileText.y = 0;
     winEntry.addChild(tileText);
 
     // Create win amount text
-    const winText = new Text(`+$${winAmount}`, {
+    const winText = new Text(`+$${winAmount.toFixed(2)}`, {
       fontSize: 12,
       fill: 0x00ff00, // Green for money
       fontWeight: "bold",
     });
-    winText.x = 80;
+    winText.x = 15; // Moved further left from 30
     winText.y = 0;
     winEntry.addChild(winText);
 
@@ -750,7 +750,7 @@ export class BrickBreakerGame extends Container {
     this.updateSideWinPositions(side);
     this.updateSideWinTotal(side);
 
-    console.log(`Added ${side} side win entry: ${multiplier}x = $${winAmount}`);
+    console.log(`Added ${side} side win entry: ${multiplier}x = $${winAmount.toFixed(2)}`);
   }
 
   private updateSideWinPositions(side: "left" | "right"): void {
@@ -1148,10 +1148,11 @@ export class BrickBreakerGame extends Container {
               // Add entry to the appropriate side win modal
               this.addSideWinEntry(brickSide, brick.multiplier);
 
-              // Calculate balance bonus using brick multiplier
-              const baseBonus = 10;
-              const multipliedBonus = Math.round(baseBonus * brick.multiplier);
+              // Calculate balance bonus using brick multiplier and actual bet amount
+              const baseBonus = this.getEffectiveBetAmount();
+              const multipliedBonus = Math.round((baseBonus * brick.multiplier) * 100) / 100; // Proper decimal calculation
               this.balance += multipliedBonus;
+              this.balance = Math.round(this.balance * 100) / 100; // Keep balance precise to 2 decimals
               this.updateBalanceText();
             }
 
@@ -1165,13 +1166,14 @@ export class BrickBreakerGame extends Container {
             // Check if all bricks are destroyed (but don't end level since we auto-reset)
             if (this.bricks.every((b) => b.destroyed)) {
               // All bricks destroyed in this round - award bonus points
-              const roundBonus = 1000;
+              const roundBonus = 1000.00;
               this.balance += roundBonus;
+              this.balance = Math.round(this.balance * 100) / 100; // Keep balance precise to 2 decimals
               this.updateBalanceText();
-              console.log(`🎉 All bricks destroyed! Bonus: $${roundBonus}`);
+              console.log(`🎉 All bricks destroyed! Bonus: $${roundBonus.toFixed(2)}`);
 
               // Show temporary bonus message
-              this.statusText.text = `All Bricks Destroyed! Bonus: $${roundBonus}`;
+              this.statusText.text = `All Bricks Destroyed! Bonus: $${roundBonus.toFixed(2)}`;
               this.statusText.visible = true;
               setTimeout(() => {
                 if (this.statusText.visible && this.statusText.text.includes("Bonus")) {
@@ -1251,7 +1253,7 @@ export class BrickBreakerGame extends Container {
   }
 
   private updateBalanceText(): void {
-    this.balanceText.text = `Balance: $${this.balance}`;
+    this.balanceText.text = `Balance: $${this.balance.toFixed(2)}`;
   }
 
   public getBalance(): number {
@@ -1259,7 +1261,7 @@ export class BrickBreakerGame extends Container {
   }
 
   public setBalance(newBalance: number): void {
-    this.balance = newBalance;
+    this.balance = Math.round(newBalance * 100) / 100; // Ensure 2 decimal precision
     this.updateBalanceText();
   }
 
