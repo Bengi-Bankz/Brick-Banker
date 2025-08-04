@@ -1,4 +1,5 @@
 import { Container, Text, Graphics, Ticker } from "pixi.js";
+import { FancyButton } from "@pixi/ui";
 import { Ball } from "./Ball";
 import { Brick } from "./Brick";
 import { Cannon } from "./Cannon";
@@ -21,6 +22,31 @@ export class BrickBreakerGame extends Container {
   private roundActive = false; // Track if a round is currently active
   private shotsFiredThisRound = { left: false, right: false }; // Track which sides have fired
   private gameTime = 0; // Track total game time for trajectory variation
+  
+  // Side win modals (outside game area)
+  private leftSideWinModal!: Graphics;
+  private rightSideWinModal!: Graphics;
+  private leftSideWinContainer!: Container;
+  private rightSideWinContainer!: Container;
+  private leftSideWinEntries: Container[] = [];
+  private rightSideWinEntries: Container[] = [];
+  private leftSideCurrentWinnings = 0;
+  private rightSideCurrentWinnings = 0;
+
+  // Right side control panel
+  private rightControlPanel!: Graphics;
+  private rightControlContainer!: Container;
+  
+  // Control panel buttons
+  private redFireButton!: FancyButton;
+  private blueFireButton!: FancyButton;
+  private redFireText!: Text;
+  private blueFireText!: Text;
+  private shot5Button!: FancyButton;
+  private shot10Button!: FancyButton;
+  private shot25Button!: FancyButton;
+  private shotQuantityText!: Text;
+  private selectedQuantity = 5; // Default to 5 shots
 
   constructor() {
     super();
@@ -82,7 +108,514 @@ export class BrickBreakerGame extends Container {
     this.dividingWall = new Graphics();
     this.addChild(this.dividingWall);
     
-    console.log("Dark green background, border, and dividing wall created");
+    // Create side win modals
+    this.createSideWinModals();
+    
+    // Create right control panel
+    this.createRightControlPanel();
+    
+    console.log("Dark green background, border, dividing wall, side win modals, and right control panel created");
+  }
+
+  private createSideWinModals(): void {
+    // Create left side win modal
+    this.leftSideWinModal = new Graphics();
+    this.addChild(this.leftSideWinModal);
+    
+    this.leftSideWinContainer = new Container();
+    this.addChild(this.leftSideWinContainer);
+    
+    // Left side title
+    const leftTitle = new Text("LEFT WINS", {
+      fontSize: 18,
+      fill: 0xff0000, // Red for left side
+      fontWeight: "bold",
+      align: "center",
+    });
+    leftTitle.anchor.set(0.5, 0);
+    leftTitle.x = 0;
+    leftTitle.y = 10;
+    this.leftSideWinContainer.addChild(leftTitle);
+    
+    // Left side total
+    const leftTotal = new Text("Total: $0.00", {
+      fontSize: 14,
+      fill: 0x00ff00, // Green for money
+      fontWeight: "bold",
+      align: "center",
+    });
+    leftTotal.anchor.set(0.5, 0);
+    leftTotal.x = 0;
+    leftTotal.y = 35;
+    this.leftSideWinContainer.addChild(leftTotal);
+    
+    // Create right side win modal
+    this.rightSideWinModal = new Graphics();
+    this.addChild(this.rightSideWinModal);
+    
+    this.rightSideWinContainer = new Container();
+    this.addChild(this.rightSideWinContainer);
+    
+    // Right side title
+    const rightTitle = new Text("RIGHT WINS", {
+      fontSize: 18,
+      fill: 0x0066ff, // Blue for right side
+      fontWeight: "bold",
+      align: "center",
+    });
+    rightTitle.anchor.set(0.5, 0);
+    rightTitle.x = 0;
+    rightTitle.y = 10;
+    this.rightSideWinContainer.addChild(rightTitle);
+    
+    // Right side total
+    const rightTotal = new Text("Total: $0.00", {
+      fontSize: 14,
+      fill: 0x00ff00, // Green for money
+      fontWeight: "bold",
+      align: "center",
+    });
+    rightTotal.anchor.set(0.5, 0);
+    rightTotal.x = 0;
+    rightTotal.y = 35;
+    this.rightSideWinContainer.addChild(rightTotal);
+    
+    console.log("Side win modals created");
+  }
+
+  private createRightControlPanel(): void {
+    // Create right control panel background
+    this.rightControlPanel = new Graphics();
+    this.addChild(this.rightControlPanel);
+    
+    // Create container for control panel content
+    this.rightControlContainer = new Container();
+    this.addChild(this.rightControlContainer);
+    
+    // Add panel title
+    const panelTitle = new Text("CONTROLS", {
+      fontSize: 16,
+      fill: 0xffffff, // White text
+      fontWeight: "bold",
+      align: "center",
+    });
+    panelTitle.anchor.set(0.5, 0);
+    panelTitle.x = 0;
+    panelTitle.y = 20;
+    this.rightControlContainer.addChild(panelTitle);
+    
+    // Create the buttons directly in the control panel
+    this.createControlPanelButtons();
+    
+    console.log("Right control panel created with integrated buttons");
+  }
+
+  private createControlPanelButtons(): void {
+    // Create shot quantity section
+    this.shotQuantityText = new Text("Shot Quantity", {
+      fontSize: 14,
+      fill: 0xffffff,
+      fontWeight: "bold",
+      align: "center",
+    });
+    this.shotQuantityText.anchor.set(0.5, 0);
+    this.shotQuantityText.x = 0;
+    this.shotQuantityText.y = 60;
+    this.rightControlContainer.addChild(this.shotQuantityText);
+
+    // Create quantity buttons (5, 10, 25) - adjusted positions for wider panel
+    this.createQuantityButton(5, -80, 90);
+    this.createQuantityButton(10, 0, 90);
+    this.createQuantityButton(25, 80, 90);
+
+    // Create fire buttons
+    this.createControlFireButtons();
+  }
+
+  private createQuantityButton(quantity: number, x: number, y: number): void {
+    const isSelected = quantity === this.selectedQuantity;
+    const buttonColor = isSelected ? 0x00ff00 : 0x666666;
+    
+    const defaultView = new Graphics()
+      .roundRect(0, 0, 40, 30, 5)
+      .fill(buttonColor)
+      .stroke({ width: 2, color: 0xffffff });
+
+    const hoverView = new Graphics()
+      .roundRect(0, 0, 40, 30, 5)
+      .fill(isSelected ? 0x44ff44 : 0x888888)
+      .stroke({ width: 2, color: 0xffffff });
+
+    const button = new FancyButton({
+      defaultView: defaultView,
+      hoverView: hoverView,
+    });
+
+    button.onPress.connect(() => {
+      this.selectedQuantity = quantity;
+      this.updateQuantityButtons();
+      console.log(`Selected quantity: ${quantity}`);
+    });
+
+    button.x = x;
+    button.y = y;
+
+    // Add text
+    const text = new Text(quantity.toString(), {
+      fontSize: 12,
+      fill: 0x000000,
+      fontWeight: "bold",
+    });
+    text.anchor.set(0.5);
+    text.x = 20;
+    text.y = 15;
+
+    this.rightControlContainer.addChild(button);
+    this.rightControlContainer.addChild(text);
+
+    // Store references
+    if (quantity === 5) this.shot5Button = button;
+    else if (quantity === 10) this.shot10Button = button;
+    else if (quantity === 25) this.shot25Button = button;
+  }
+
+  private updateQuantityButtons(): void {
+    this.updateSingleQuantityButton(this.shot5Button, 5);
+    this.updateSingleQuantityButton(this.shot10Button, 10);
+    this.updateSingleQuantityButton(this.shot25Button, 25);
+  }
+
+  private updateSingleQuantityButton(button: FancyButton, quantity: number): void {
+    const isSelected = quantity === this.selectedQuantity;
+    const buttonColor = isSelected ? 0x00ff00 : 0x666666;
+    
+    const defaultView = new Graphics()
+      .roundRect(0, 0, 40, 30, 5)
+      .fill(buttonColor)
+      .stroke({ width: 2, color: 0xffffff });
+
+    button.defaultView = defaultView;
+  }
+
+  private createControlFireButtons(): void {
+    // Red fire button
+    const redButtonOutline = new Graphics()
+      .roundRect(0, 0, 120, 50, 5)
+      .stroke({ width: 2, color: 0xff0000 });
+
+    const redSweepBackground = new Graphics()
+      .rect(-50, 0, 0, 50)
+      .fill(0xff0000);
+    redSweepBackground.skew.x = Math.PI / 4;
+
+    const redDefaultView = new Container();
+    redDefaultView.addChild(redSweepBackground.clone());
+    redDefaultView.addChild(redButtonOutline);
+
+    const redHoverView = new Container();
+    const redHoverSweep = redSweepBackground.clone();
+    redHoverSweep.width = 300;
+    redHoverView.addChild(redHoverSweep);
+    redHoverView.addChild(new Graphics()
+      .roundRect(0, 0, 120, 50, 5)
+      .stroke({ width: 2, color: 0xff4444 }));
+
+    this.redFireButton = new FancyButton({
+      defaultView: redDefaultView,
+      hoverView: redHoverView,
+      animations: {
+        hover: {
+          props: { scale: { x: 1.1, y: 1.1 } },
+          duration: 1000,
+        },
+      },
+    });
+
+    this.redFireButton.onPress.connect(() => {
+      console.log("Red fire button pressed!");
+      this.fireCannon("left", this.selectedQuantity);
+    });
+
+    this.redFireButton.onHover.connect(() => {
+      this.redFireText.style.fill = 0xffffff;
+    });
+    
+    this.redFireButton.onOut.connect(() => {
+      this.redFireText.style.fill = 0xff0000;
+    });
+
+    this.redFireButton.x = -60;
+    this.redFireButton.y = 150;
+    this.rightControlContainer.addChild(this.redFireButton);
+
+    this.redFireText = new Text("FIRE", {
+      fontSize: 15,
+      fill: 0xff0000,
+      fontWeight: "bold",
+    });
+    this.redFireText.anchor.set(0.5);
+    this.redFireText.x = 0;
+    this.redFireText.y = 175;
+    this.rightControlContainer.addChild(this.redFireText);
+
+    // Blue fire button
+    const blueButtonOutline = new Graphics()
+      .roundRect(0, 0, 120, 50, 5)
+      .stroke({ width: 2, color: 0x0066ff });
+
+    const blueSweepBackground = new Graphics()
+      .rect(-50, 0, 0, 50)
+      .fill(0x0066ff);
+    blueSweepBackground.skew.x = Math.PI / 4;
+
+    const blueDefaultView = new Container();
+    blueDefaultView.addChild(blueSweepBackground.clone());
+    blueDefaultView.addChild(blueButtonOutline);
+
+    const blueHoverView = new Container();
+    const blueHoverSweep = blueSweepBackground.clone();
+    blueHoverSweep.width = 300;
+    blueHoverView.addChild(blueHoverSweep);
+    blueHoverView.addChild(new Graphics()
+      .roundRect(0, 0, 120, 50, 5)
+      .stroke({ width: 2, color: 0x4488ff }));
+
+    this.blueFireButton = new FancyButton({
+      defaultView: blueDefaultView,
+      hoverView: blueHoverView,
+      animations: {
+        hover: {
+          props: { scale: { x: 1.1, y: 1.1 } },
+          duration: 1000,
+        },
+      },
+    });
+
+    this.blueFireButton.onPress.connect(() => {
+      console.log("Blue fire button pressed!");
+      this.fireCannon("right", this.selectedQuantity);
+    });
+
+    this.blueFireButton.onHover.connect(() => {
+      this.blueFireText.style.fill = 0xffffff;
+    });
+    
+    this.blueFireButton.onOut.connect(() => {
+      this.blueFireText.style.fill = 0x0066ff;
+    });
+
+    this.blueFireButton.x = -60;
+    this.blueFireButton.y = 220;
+    this.rightControlContainer.addChild(this.blueFireButton);
+
+    this.blueFireText = new Text("FIRE", {
+      fontSize: 15,
+      fill: 0x0066ff,
+      fontWeight: "bold",
+    });
+    this.blueFireText.anchor.set(0.5);
+    this.blueFireText.x = 0;
+    this.blueFireText.y = 245;
+    this.rightControlContainer.addChild(this.blueFireText);
+  }
+
+  private showSideWinModal(side: "left" | "right"): void {
+    // Clear previous entries for the specified side
+    if (side === "left") {
+      this.leftSideWinEntries.forEach(entry => {
+        this.leftSideWinContainer.removeChild(entry);
+      });
+      this.leftSideWinEntries = [];
+      this.leftSideCurrentWinnings = 0;
+    } else {
+      this.rightSideWinEntries.forEach(entry => {
+        this.rightSideWinContainer.removeChild(entry);
+      });
+      this.rightSideWinEntries = [];
+      this.rightSideCurrentWinnings = 0;
+    }
+    
+    // Update the total display
+    this.updateSideWinTotal(side);
+    
+    console.log(`${side} side win modal activated`);
+  }
+
+  private addSideWinEntry(side: "left" | "right", multiplier: number): void {
+    // Calculate win amount
+    const baseAmount = 10;
+    const winAmount = Math.round(baseAmount * multiplier);
+    
+    // Update current winnings for the side
+    if (side === "left") {
+      this.leftSideCurrentWinnings += winAmount;
+    } else {
+      this.rightSideCurrentWinnings += winAmount;
+    }
+    
+    // Create win entry container
+    const winEntry = new Container();
+    
+    // Determine color based on side
+    const sideColor = side === "left" ? 0xff6666 : 0x6666ff;
+    
+    // Create tile info text
+    const tileText = new Text(`${multiplier}x`, {
+      fontSize: 12,
+      fill: sideColor,
+      fontWeight: "bold",
+    });
+    tileText.x = 5;
+    tileText.y = 0;
+    winEntry.addChild(tileText);
+    
+    // Create win amount text
+    const winText = new Text(`+$${winAmount}`, {
+      fontSize: 12,
+      fill: 0x00ff00, // Green for money
+      fontWeight: "bold",
+    });
+    winText.x = 80;
+    winText.y = 0;
+    winEntry.addChild(winText);
+    
+    // Add to appropriate side
+    if (side === "left") {
+      this.leftSideWinEntries.push(winEntry);
+      this.leftSideWinContainer.addChild(winEntry);
+    } else {
+      this.rightSideWinEntries.push(winEntry);
+      this.rightSideWinContainer.addChild(winEntry);
+    }
+    
+    // Update positions and total
+    this.updateSideWinPositions(side);
+    this.updateSideWinTotal(side);
+    
+    console.log(`Added ${side} side win entry: ${multiplier}x = $${winAmount}`);
+  }
+
+  private updateSideWinPositions(side: "left" | "right"): void {
+    const entries = side === "left" ? this.leftSideWinEntries : this.rightSideWinEntries;
+    let yPosition = 60; // Start below title and total
+    
+    // Show most recent entries at the top
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const entry = entries[i];
+      entry.y = yPosition;
+      yPosition += 18; // Spacing between entries
+    }
+  }
+
+  private updateSideWinTotal(side: "left" | "right"): void {
+    const container = side === "left" ? this.leftSideWinContainer : this.rightSideWinContainer;
+    const winnings = side === "left" ? this.leftSideCurrentWinnings : this.rightSideCurrentWinnings;
+    
+    // Find and update the total text (it's the second child)
+    const totalText = container.children[1] as Text;
+    if (totalText) {
+      totalText.text = `Total: $${winnings.toFixed(2)}`;
+    }
+  }
+
+  private positionSideWinModals(width: number, height: number): void {
+    const modalWidth = 150;
+    const modalHeight = 400;
+    
+    // Calculate the green game area bounds (based on the border margins)
+    const playAreaMargin = 20;
+    const gameAreaLeft = -width / 2 + playAreaMargin;
+    const gameAreaRight = width / 2 - playAreaMargin;
+    const gameAreaTop = -height / 2 + playAreaMargin;
+    
+    // Position left side modal completely outside the green area (to the left)
+    const leftModalX = gameAreaLeft - modalWidth - 20; // 20px gap from green area
+    const leftModalY = gameAreaTop;
+    
+    if (this.leftSideWinModal) {
+      this.leftSideWinModal.clear();
+      this.leftSideWinModal
+        .rect(0, 0, modalWidth, modalHeight)
+        .fill(0x000000, 0.8) // Semi-transparent black
+        .stroke({ width: 2, color: 0xff0000 }); // Red border for left side
+      
+      this.leftSideWinModal.x = leftModalX;
+      this.leftSideWinModal.y = leftModalY;
+    }
+    
+    if (this.leftSideWinContainer) {
+      this.leftSideWinContainer.x = leftModalX + modalWidth / 2; // Center in modal
+      this.leftSideWinContainer.y = leftModalY;
+    }
+    
+    // Position right side modal completely outside the green area (to the right)
+    const rightModalX = gameAreaRight + 20; // 20px gap from green area
+    const rightModalY = gameAreaTop;
+    
+    if (this.rightSideWinModal) {
+      this.rightSideWinModal.clear();
+      this.rightSideWinModal
+        .rect(0, 0, modalWidth, modalHeight)
+        .fill(0x000000, 0.8) // Semi-transparent black
+        .stroke({ width: 2, color: 0x0066ff }); // Blue border for right side
+      
+      this.rightSideWinModal.x = rightModalX;
+      this.rightSideWinModal.y = rightModalY;
+    }
+    
+    if (this.rightSideWinContainer) {
+      this.rightSideWinContainer.x = rightModalX + modalWidth / 2; // Center in modal
+      this.rightSideWinContainer.y = rightModalY;
+    }
+    
+    console.log("Side win modals positioned completely outside green game area");
+  }
+
+  private positionRightControlPanel(width: number, height: number): void {
+    const panelWidth = 300; // Increased from 200 to 300
+    const panelHeight = height - 40; // Full height minus margins
+    
+    // Calculate the right win modal position to place control panel further right
+    const playAreaMargin = 20;
+    const gameAreaRight = width / 2 - playAreaMargin;
+    const modalWidth = 150;
+    const rightWinModalX = gameAreaRight + 20; // Right win modal position
+    
+    // Position control panel further to the right of the right win modal
+    const panelX = rightWinModalX + modalWidth + 20; // 20px gap from right win modal
+    const panelY = -height / 2 + 20; // 20px margin from top (full height)
+    
+    if (this.rightControlPanel) {
+      this.rightControlPanel.clear();
+      this.rightControlPanel
+        .rect(0, 0, panelWidth, panelHeight)
+        .fill(0x2d5a2d, 0.9) // Stake green with slight transparency
+        .stroke({ width: 2, color: 0x4a8a4a }); // Lighter green border
+      
+      this.rightControlPanel.x = panelX;
+      this.rightControlPanel.y = panelY;
+    }
+    
+    if (this.rightControlContainer) {
+      this.rightControlContainer.x = panelX + panelWidth / 2; // Center in panel
+      this.rightControlContainer.y = panelY;
+    }
+    
+    console.log("Right control panel positioned further right of win modal, full height");
+  }
+
+  public getControlPanelPosition(): { x: number; y: number; width: number; height: number } {
+    // Return the control panel's position and dimensions for the working buttons to use
+    if (this.rightControlPanel) {
+      return {
+        x: this.rightControlPanel.x,
+        y: this.rightControlPanel.y,
+        width: 300, // Updated panel width
+        height: this.screenHeight - 40 // Panel height
+      };
+    }
+    // Fallback if panel doesn't exist yet
+    return { x: 0, y: 0, width: 300, height: 600 };
   }
 
   public fireCannon(side: "left" | "right", quantity: number = 1): void {
@@ -111,6 +644,9 @@ export class BrickBreakerGame extends Container {
     this.shotsFiredThisRound[side] = true;
     this.roundActive = true;
     console.log(`🎯 Round activated. Shots fired this round:`, this.shotsFiredThisRound);
+
+    // Show side win modal for the firing side
+    this.showSideWinModal(side);
 
     // Play cannon fire sound effect (with error handling)
     try {
@@ -330,6 +866,12 @@ export class BrickBreakerGame extends Container {
 
             // Only award points if the brick is completely destroyed
             if (brickDestroyed) {
+              // Determine which side destroyed the brick
+              const brickSide = brick.x < 0 ? "left" : "right";
+              
+              // Add entry to the appropriate side win modal
+              this.addSideWinEntry(brickSide, brick.multiplier);
+              
               // Calculate balance bonus using brick multiplier
               const baseBonus = 10;
               const multipliedBonus = Math.round(baseBonus * brick.multiplier);
@@ -533,6 +1075,12 @@ export class BrickBreakerGame extends Container {
 
     this.statusText.x = 0;
     this.statusText.y = 0;
+
+    // Position side win modals outside the game area
+    this.positionSideWinModals(width, height);
+
+    // Position right control panel
+    this.positionRightControlPanel(width, height);
 
     // Position ONLY cannon - MOVED DOWN 75px from original position (was 150px, now up by 75px)
     const originalCannonY = height / 2 - 150; // Original position above UI panel

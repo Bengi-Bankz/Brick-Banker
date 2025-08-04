@@ -120,8 +120,11 @@ export class MainScreen extends Container {
       gameHeight
     );
 
-    // Resize UI panel
+    // Resize UI panel but don't position it (buttons are now in the control panel)
     this.uiPanel.resize(width, height);
+    
+    // Hide the GameUIPanel since buttons are now integrated into the control panel
+    this.uiPanel.visible = false;
 
     this.game.resize(gameWidth, gameHeight);
   }

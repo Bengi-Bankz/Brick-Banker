@@ -338,9 +338,8 @@ export class GameUIPanel extends Container {
   }
 
   public resize(width: number, height: number): void {
-    // Position the panel in the bottom-right corner
-    this.x = width - 200;
-    this.y = height - 100;
+    // Position will be set by MainScreen using control panel coordinates
+    // This method is kept for compatibility but positioning is handled externally
   }
 
   // Placeholder method to prevent errors
