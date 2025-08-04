@@ -8,11 +8,11 @@ export class GameUIPanel extends Container {
   private blueFireText!: Text;
   
   // Shot quantity buttons
-  private shot1Button!: FancyButton;
   private shot5Button!: FancyButton;
   private shot10Button!: FancyButton;
+  private shot25Button!: FancyButton;
   private shotQuantityText!: Text;
-  private selectedQuantity = 1; // Default to 1 shot
+  private selectedQuantity = 5; // Default to 5 shots
 
   public onRedFire?: () => void;
   public onBlueFire?: () => void;
@@ -256,10 +256,10 @@ export class GameUIPanel extends Container {
     this.shotQuantityText.y = -100; // Position above fire buttons
     this.addChild(this.shotQuantityText);
 
-    // Create quantity buttons (1, 5, 10)
-    this.createQuantityButton(1, -60, -70);
-    this.createQuantityButton(5, 0, -70);
-    this.createQuantityButton(10, 60, -70);
+    // Create quantity buttons (5, 10, 25)
+    this.createQuantityButton(5, -60, -70);
+    this.createQuantityButton(10, 0, -70);
+    this.createQuantityButton(25, 60, -70);
   }
 
   private createQuantityButton(quantity: number, x: number, y: number): void {
@@ -309,16 +309,16 @@ export class GameUIPanel extends Container {
     this.addChild(text);
 
     // Store references
-    if (quantity === 1) this.shot1Button = button;
-    else if (quantity === 5) this.shot5Button = button;
+    if (quantity === 5) this.shot5Button = button;
     else if (quantity === 10) this.shot10Button = button;
+    else if (quantity === 25) this.shot25Button = button;
   }
 
   private updateQuantityButtons(): void {
     // Update button colors based on selection
-    this.updateSingleQuantityButton(this.shot1Button, 1);
     this.updateSingleQuantityButton(this.shot5Button, 5);
     this.updateSingleQuantityButton(this.shot10Button, 10);
+    this.updateSingleQuantityButton(this.shot25Button, 25);
   }
 
   private updateSingleQuantityButton(button: FancyButton, quantity: number): void {

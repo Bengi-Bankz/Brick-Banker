@@ -215,4 +215,18 @@ export class Brick extends Graphics {
     this.currentHitPoints = 0;
     this.hitBrick();
   }
+
+  public resetBrick(): void {
+    // Reset brick to full health and original appearance
+    this.destroyed = false;
+    this.visible = true;
+    this.currentHitPoints = this.maxHitPoints;
+    
+    // Clear and redraw with original color
+    this.clear();
+    this.drawBrick(this.originalColor);
+    this.addMultiplierText();
+    
+    console.log(`Brick reset: ${this.multiplier}x with ${this.maxHitPoints} HP`);
+  }
 }

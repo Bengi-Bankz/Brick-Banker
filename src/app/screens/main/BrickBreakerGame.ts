@@ -1,4 +1,4 @@
-import { Container, Text, Graphics } from "pixi.js";
+import { Container, Text, Graphics, Ticker } from "pixi.js";
 import { Ball } from "./Ball";
 import { Brick } from "./Brick";
 import { Cannon } from "./Cannon";
@@ -20,6 +20,7 @@ export class BrickBreakerGame extends Container {
   private dividingWall!: Graphics; // Vertical wall in the middle
   private roundActive = false; // Track if a round is currently active
   private shotsFiredThisRound = { left: false, right: false }; // Track which sides have fired
+  private gameTime = 0; // Track total game time for trajectory variation
 
   constructor() {
     super();
@@ -53,6 +54,13 @@ export class BrickBreakerGame extends Container {
     console.log("Total children in BrickBreakerGame:", this.children.length);
 
     this.createBricks();
+    
+    // Add ticker for game time tracking
+    Ticker.shared.add(this.updateGameTime, this);
+  }
+  
+  private updateGameTime(ticker: Ticker): void {
+    this.gameTime += ticker.deltaTime;
   }
 
   private createCannonsAndButtons(): void {
@@ -126,8 +134,12 @@ export class BrickBreakerGame extends Container {
     for (let i = 0; i < quantity; i++) {
       const ball = new Ball(ballColor);
       
+      // Add time-based trajectory variation for unpredictability
+      const timeVariation = Math.sin(this.gameTime * 0.001) * 0.5; // Slow oscillation based on game time
+      const randomVariation = (Math.random() - 0.5) * 0.3; // Random component
+      
       // Add slight variations to position and direction for multiple balls
-      const angleVariation = (i - (quantity - 1) / 2) * 0.2; // Spread balls in a fan pattern
+      const angleVariation = (i - (quantity - 1) / 2) * 0.2 + timeVariation + randomVariation;
       const positionOffset = (i - (quantity - 1) / 2) * 5; // Slight horizontal offset
       
       const adjustedFirePos = {
@@ -135,9 +147,10 @@ export class BrickBreakerGame extends Container {
         y: firePos.y
       };
       
+      // Enhanced trajectory variation with time-based and random components
       const adjustedFireDir = {
-        x: fireDir.x + Math.sin(angleVariation) * 2,
-        y: fireDir.y + Math.cos(angleVariation) * 0.5
+        x: fireDir.x + Math.sin(angleVariation) * 2 + Math.cos(this.gameTime * 0.002) * 0.3,
+        y: fireDir.y + Math.cos(angleVariation) * 0.5 + Math.sin(this.gameTime * 0.0015) * 0.2
       };
       
       ball.reset(adjustedFirePos.x, adjustedFirePos.y, adjustedFireDir.x, adjustedFireDir.y);
@@ -214,13 +227,12 @@ export class BrickBreakerGame extends Container {
   private checkDividingWallCollision(ball: Ball): boolean {
     // Check if ball hits the dividing wall in the center
     const wallThickness = 8;
-    const wallHeight = this.screenHeight - 100;
+    const wallTop = -this.screenHeight / 2; // From the very top
+    const wallBottom = this.screenHeight / 2 - 80; // Stop 80px from bottom (above cannon area)
     
     // Wall bounds (centered at x=0)
     const wallLeft = -wallThickness / 2;
     const wallRight = wallThickness / 2;
-    const wallTop = -wallHeight / 2;
-    const wallBottom = wallHeight / 2;
     
     // Ball bounds
     const ballLeft = ball.x - ball.radius;
@@ -332,11 +344,22 @@ export class BrickBreakerGame extends Container {
               ball.velocityX = -ball.velocityX;
             }
 
-            // Check if all bricks are destroyed
+            // Check if all bricks are destroyed (but don't end level since we auto-reset)
             if (this.bricks.every((b) => b.destroyed)) {
-              this.gameState = "levelComplete";
-              this.statusText.text = "Level Complete!\nClick to continue";
+              // All bricks destroyed in this round - award bonus points
+              const roundBonus = 1000;
+              this.balance += roundBonus;
+              this.updateBalanceText();
+              console.log(`🎉 All bricks destroyed! Bonus: $${roundBonus}`);
+              
+              // Show temporary bonus message
+              this.statusText.text = `All Bricks Destroyed! Bonus: $${roundBonus}`;
               this.statusText.visible = true;
+              setTimeout(() => {
+                if (this.statusText.visible && this.statusText.text.includes("Bonus")) {
+                  this.statusText.visible = false;
+                }
+              }, 3000);
             }
             break; // Only handle one collision per frame
           }
@@ -362,10 +385,13 @@ export class BrickBreakerGame extends Container {
     this.roundActive = false;
     this.shotsFiredThisRound = { left: false, right: false };
     
-    console.log("🏁 Round ended. Ready for new shots.");
+    console.log("🏁 Round ended. Resetting board for next round.");
+    
+    // Reset the entire board - restore all bricks to full health
+    this.resetBoard();
     
     // Update status text
-    this.statusText.text = "Round complete! Fire cannons for next round.";
+    this.statusText.text = "Round complete! Board reset. Fire cannons for next round.";
     this.statusText.visible = true;
     
     // Hide status text after a delay
@@ -374,6 +400,17 @@ export class BrickBreakerGame extends Container {
         this.statusText.visible = false;
       }
     }, 2000);
+  }
+
+  private resetBoard(): void {
+    console.log("🔄 Resetting board - restoring all bricks to full health");
+    
+    // Reset all existing bricks to full health
+    for (const brick of this.bricks) {
+      brick.resetBrick();
+    }
+    
+    console.log(`✅ Board reset complete. ${this.bricks.length} bricks restored.`);
   }
 
   private resetBall(): void {
@@ -467,20 +504,22 @@ export class BrickBreakerGame extends Container {
     if (this.dividingWall) {
       this.dividingWall.clear();
       
-      // Draw vertical wall from top to bottom in the center
+      // Draw vertical wall from top to just above cannon area
       const wallThickness = 8;
-      const wallHeight = height - 100; // Leave some space at top and bottom
+      const wallTop = -height / 2; // Start from the very top
+      const wallBottom = height / 2 - 80; // Stop 80px from bottom (above cannon area)
+      const wallHeight = wallBottom - wallTop;
       
       this.dividingWall
         .rect(
           -wallThickness / 2, // Center the wall
-          -wallHeight / 2,    // Center vertically
+          wallTop,           // Start from top
           wallThickness,
           wallHeight
         )
         .fill(0x666666); // Gray wall color
         
-      console.log("Dividing wall drawn at center with thickness:", wallThickness);
+      console.log("Dividing wall drawn from top to cannon area, height:", wallHeight);
     }
 
     // Resize all balls
